@@ -24,6 +24,8 @@
 
 ## 模块协作
 
+另外提供一份 [细菌 AI 状态机历史示例](Historical/2026-10-28-BacteriaStateMachine/README.md)：这是我参与开发期间的 `enum + switch` 版本，包含视觉感知、追击和随机巡逻。它属于服务器执行的游戏 AI，独立放在 `Historical/`，保留当时逻辑及尚未修复的问题，不代表当前游戏最终实现。
+
 ```text
 PlayerInputReader ──→ CameraController
         │
