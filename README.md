@@ -47,7 +47,6 @@ Assets/_Game/
 Tools/Network/           Windows 客户端、服务器启动脚本
 Packages/               原工程依赖及版本锁定记录
 ProjectSettings/        原工程 Unity 版本记录
-Historical/             开发过程中的历史代码示例
 ```
 
 `Tests/Editor/` 中的检查脚本依赖完整原工程的场景和组件，部分需要进入 Play Mode 后执行，不是一套可以在本源码阅读仓库中直接运行的独立单元测试。
