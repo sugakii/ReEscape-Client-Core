@@ -29,7 +29,7 @@ public class PlayerInteraction : MonoBehaviour
     private HashSet<IInteractable> visibleTargets = new();
 
     private IInteractable highlightedTarget;
-    
+
     // 缓存输入组件和玩家摄像机。
     private void Awake()
     {

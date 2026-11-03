@@ -5,9 +5,15 @@
 /// </summary>
 public class LobbyMember
 {
-    public ulong ClientId { get; }   // 网络编号
+    public ulong ClientId
+    {
+        get;
+    }   // 网络编号
 
-    public int PlayerNumber { get; }   // 几号玩家
+    public int PlayerNumber
+    {
+        get;
+    }   // 几号玩家
 
     public bool IsLeader { get; }
 

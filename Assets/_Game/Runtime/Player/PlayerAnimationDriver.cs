@@ -43,7 +43,7 @@ public class PlayerAnimationDriver : MonoBehaviour
         velocity.y = 0f;
 
         Vector3 localVelocity = transform.InverseTransformDirection(velocity);
-        
+
         float referenceSpeed = Mathf.Max(motor.WalkSpeed, 0.01f);
         float dampingTime = canMove ? 0.08f : 0f;
 
@@ -86,7 +86,11 @@ public class PlayerAnimationDriver : MonoBehaviour
     {
         foreach(Animator target in new[] { animator, showAnimator })
         {
-            if(target == null) continue;
+            if(target == null)
+            {
+                continue;
+            }
+
             target.SetFloat(MoveX, 0f);
             target.SetFloat(MoveZ, 0f);
             target.SetBool(Grounded, true);

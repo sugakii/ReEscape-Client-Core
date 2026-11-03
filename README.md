@@ -1,64 +1,76 @@
-# Re: Escape the Backrooms — 客户端核心代码
+# Re: Escape the Backrooms — 游戏源码阅读版
 
-基于 Unity 6 制作的第一人称多人合作恐怖游戏。本仓库选取开发过程中我主要学习、编写与调试的客户端模块，供实习求职时阅读代码使用。
+基于 Unity 6 / C# / Netcode for GameObjects 制作的第一人称多人合作恐怖游戏，支持最多 4 名玩家联机，包含探索寻钥、出口交互、敌人巡逻追击、处决、死亡观战和胜负结算。
 
-这是完整游戏的源码节选，不包含场景、角色模型、音频、动画片段和完整网络系统，不能直接作为完整 Unity 工程运行。动画控制器保留状态机和参数配置，所引用的动画资源未随仓库分发。
+[实机演示视频](https://www.bilibili.com/video/BV1rTxP65EAf/)
+
+本仓库最初只公开部分客户端模块；现已同步项目的全部自编游戏脚本，包含客户端功能、网络会话与服务器逻辑、构建工具和检查脚本。代码使用四空格缩进，控制语句使用大括号，序列化字段特性单独成行，并保留简短的职责与流程注释。
+
+这是用于学习和求职展示的**源码阅读版本**。仓库没有包含完整游戏场景、Prefab、模型、贴图、音频、视频和动画片段，不能直接当作完整 Unity 工程打开试玩。动画控制器与代码引用的场景和资源路径是原工程配置，相关资源并未全部公开。
 
 ## 推荐阅读顺序
 
-所有路径均以 `Assets/_Game/Runtime/` 为起点。
+下表中的脚本路径以 `Assets/_Game/Runtime/` 为起点。
 
-| 模块 | 文件 | 可以关注的实现 |
+| 模块 | 主要脚本 | 内容 |
 | --- | --- | --- |
-| 输入 | [PlayerInputReader](Assets/_Game/Runtime/Input/PlayerInputReader.cs) | 缓存 InputAction，区分持续按住与本帧按下，将输入读取集中提供给其他组件 |
-| 视角 | [CameraController](Assets/_Game/Runtime/Camera/CameraController.cs) | 玩家根节点控制水平转向，相机控制俯仰，限制角度，外部镜头控制结束后同步角度缓存 |
-| 移动 | [PlayerMotor](Assets/_Game/Runtime/Player/PlayerMotor.cs) | CharacterController 位移、相机相对移动、跳跃与重力、实际水平速度与出生重置 |
-| 体力 | [PlayerStamina](Assets/_Game/Runtime/Player/PlayerStamina.cs) | 冲刺消耗与恢复、重新启动冲刺阈值、持续按住但不能冲刺时恢复体力、追击状态接口 |
-| 动画 | [PlayerAnimationDriver](Assets/_Game/Runtime/Player/PlayerAnimationDriver.cs) | 实际速度转角色局部速度，第一/第三人称 Animator 参数驱动、阻尼、参数复制与死亡清理 |
-| 交互 | [PlayerInteraction](Assets/_Game/Runtime/Player/PlayerInteraction.cs) | 范围收集、HashSet 去重、屏幕范围和遮挡检测、准星高亮、交互执行及停用清理 |
-| 交互契约 | [IInteractable](Assets/_Game/Runtime/Interaction/IInteractable.cs) | 用接口统一交互点、提示与行为入口 |
-| 提示表现 | [InteractionPromptUI](Assets/_Game/Runtime/Interaction/InteractionPromptUI.cs) | 世界坐标投影、距离缩放、高亮与按键反馈，与交互判定分离 |
-| 音效 | [FootstepAudio](Assets/_Game/Runtime/Audio/FootstepAudio.cs) | 多片段随机播放，通过下标映射避免连续重复，单片段和空配置处理 |
-| 大厅数据 | [LobbyMember](Assets/_Game/Runtime/Network/LobbyMember.cs) | 保存成员编号、房主身份与服务器确认的准备状态 |
-| 大厅表现 | [LobbyMemberRow](Assets/_Game/Runtime/UI/LobbyMemberRow.cs) | 成员数据映射到单行 UI、本机高亮、房主状态与空槽恢复 |
+| 输入与视角 | [PlayerInputReader](Assets/_Game/Runtime/Input/PlayerInputReader.cs)、[CameraController](Assets/_Game/Runtime/Camera/CameraController.cs) | 输入读取、第一人称水平转向与俯仰、灵敏度设置 |
+| 移动与体力 | [PlayerMotor](Assets/_Game/Runtime/Player/PlayerMotor.cs)、[PlayerStamina](Assets/_Game/Runtime/Player/PlayerStamina.cs) | 行走、冲刺、跳跃、重力、体力消耗与恢复、被追击状态 |
+| 角色动画 | [PlayerAnimationDriver](Assets/_Game/Runtime/Player/PlayerAnimationDriver.cs) | 根据实际移动速度驱动第一、第三人称动画，并复制参数给网络角色 |
+| 交互与提示 | [PlayerInteraction](Assets/_Game/Runtime/Player/PlayerInteraction.cs)、[IInteractable](Assets/_Game/Runtime/Interaction/IInteractable.cs)、[InteractionPromptUI](Assets/_Game/Runtime/Interaction/InteractionPromptUI.cs) | 范围查询、目标去重、遮挡检测、屏幕提示、高亮与交互入口 |
+| 大厅与连接 | [NetworkSession](Assets/_Game/Runtime/Network/NetworkSession.cs)、[ClientLobby](Assets/_Game/Runtime/Network/ClientLobby.cs)、[ServerLobby](Assets/_Game/Runtime/Network/ServerLobby.cs) | 会话生命周期、成员快照、准备状态、连接审批和游戏阶段 |
+| 房间列表 | [RoomBrowserController](Assets/_Game/Runtime/UI/RoomBrowserController.cs)、[ServerRoomDirectory](Assets/_Game/Runtime/Network/ServerRoomDirectory.cs)、[RoomDirectoryProtocol](Assets/_Game/Runtime/Network/RoomDirectoryProtocol.cs) | 查询、创建和加入单个服务器房间，显示房名与人数 |
+| 本机与网络角色 | [LocalPlayerNetworkBridge](Assets/_Game/Runtime/Network/LocalPlayerNetworkBridge.cs)、[PlayerNetworkIdentity](Assets/_Game/Runtime/Network/PlayerNetworkIdentity.cs)、[PlayerNetworkView](Assets/_Game/Runtime/Network/PlayerNetworkView.cs) | 出生定位、位姿和动画同步、身体显示、第一人称观战相机数据 |
+| 生成与网络交互 | [ServerWorldSpawner](Assets/_Game/Runtime/Network/ServerWorldSpawner.cs)、[RandomPointNetworkSpawner](Assets/_Game/Runtime/Network/RandomPointNetworkSpawner.cs)、[NetworkKey](Assets/_Game/Runtime/Network/NetworkKey.cs)、[NetworkDoor](Assets/_Game/Runtime/Network/NetworkDoor.cs) | 本局物体生成、随机候选点、钥匙拾取与团队开门条件 |
+| 细菌 AI | [NetworkBacteria](Assets/_Game/Runtime/Network/NetworkBacteria.cs) | `enum + switch` 管理巡逻、追击和处决；视野、遮挡与 NavMesh 路径检测 |
+| 生命与处决 | [NetworkPlayerLife](Assets/_Game/Runtime/Network/NetworkPlayerLife.cs)、[PlayerExecutionState](Assets/_Game/Runtime/Network/PlayerExecutionState.cs)、[PlayerExecutionView](Assets/_Game/Runtime/Player/PlayerExecutionView.cs) | 服务器确认生命状态，统一处决时间并锁定本机视角 |
+| 死亡与观战 | [LocalDeathTransition](Assets/_Game/Runtime/Player/LocalDeathTransition.cs)、[PlayerSpectator](Assets/_Game/Runtime/Player/PlayerSpectator.cs) | 受害者本机花屏转场、队友第一人称观战和左键切换目标 |
+| 回合规则 | [ServerRoundRules](Assets/_Game/Runtime/Gameplay/ServerRoundRules.cs)、[ExitZone](Assets/_Game/Runtime/Gameplay/ExitZone.cs) | 存活成员全部进入出口时获胜，全员死亡时失败 |
+| 菜单与设置 | [PrototypeMenus](Assets/_Game/Runtime/UI/PrototypeMenus.cs)、[RoundResultView](Assets/_Game/Runtime/UI/RoundResultView.cs)、[SettingsMenuController](Assets/_Game/Runtime/UI/SettingsMenuController.cs) | 主菜单、暂停、结算、音量与鼠标灵敏度设置及保存 |
+| 声音 | [FootstepAudio](Assets/_Game/Runtime/Audio/FootstepAudio.cs)、[PlayerFootstepDriver](Assets/_Game/Runtime/Audio/PlayerFootstepDriver.cs)、[NetworkFootstepDriver](Assets/_Game/Runtime/Audio/NetworkFootstepDriver.cs)、[BacteriaChaseAudio](Assets/_Game/Runtime/Audio/BacteriaChaseAudio.cs) | 本机与远端脚步、避免连续重复片段、追击音循环与淡出 |
 
-## 模块协作
-
-另外提供一份 [细菌 AI 状态机历史示例](Historical/2026-10-28-BacteriaStateMachine/README.md)：这是我参与开发期间的 `enum + switch` 版本，包含视觉感知、追击和随机巡逻。它属于服务器执行的游戏 AI，独立放在 `Historical/`，保留当时逻辑及尚未修复的问题，不代表当前游戏最终实现。
+## 工程目录
 
 ```text
-PlayerInputReader ──→ CameraController
-        │
-        ├──────────→ PlayerMotor ←── PlayerStamina
-        │                 │
-        │                 └──────→ PlayerAnimationDriver
-        │
-        └──────────→ PlayerInteraction
-                              │
-                       IInteractable
-                              │
-                     InteractionPromptUI
-
-服务器确认的成员数据 → LobbyMember → LobbyMemberRow
-移动距离驱动（完整项目中） → FootstepAudio
+Assets/_Game/
+├── Runtime/             游戏运行时代码、输入配置和动画控制器
+│   ├── Audio/
+│   ├── Camera/
+│   ├── Gameplay/
+│   ├── Input/
+│   ├── Interaction/
+│   ├── Network/
+│   ├── Player/
+│   └── UI/              包含死亡断讯效果的 Shader
+├── Editor/              Windows 客户端和服务器构建菜单
+└── Tests/Editor/        处决、观战、房间列表和设置的检查脚本
+Tools/Network/           Windows 客户端、服务器启动脚本
+Packages/               原工程依赖及版本锁定记录
+ProjectSettings/        原工程 Unity 版本记录
+Historical/             开发过程中的历史代码示例
 ```
 
-客户端本地角色负责输入和第一人称表现；完整项目通过另一个网络玩家对象同步角色位姿与状态。本仓库聚焦本地客户端实现，不包含服务器部署、房间目录和网络同步的全部依赖。
+`Tests/Editor/` 中的检查脚本依赖完整原工程的场景和组件，部分需要进入 Play Mode 后执行，不是一套可以在本源码阅读仓库中直接运行的独立单元测试。
 
-## 配置与实际规则
+## 游戏与连接规则
 
-- `PlayerControls.inputactions`：输入 Action 配置。PlayerInput 使用此资源，Action 名称须与 `PlayerInputReader` 对应。
-- `Animation/Player/`：第一、第三人称动画控制器。驱动参数为 `MoveX`、`MoveZ`、`Grounded`、`VerticalSpeed`。
-- 移动与动画参数需要在 Inspector 绑定相机、Animator 等引用；移动对象需同时配置 CharacterController、PlayerInputReader 和 PlayerStamina。
-- 当前代码中的冲刺重新启动阈值为 **80%**；消耗/恢复时长是可序列化字段，实际场景可覆盖脚本默认值。被追击时允许持续冲刺，追击结束后体力回满。
-- 未公开完整场景，因此仓库中的默认参数不代表最终实机的全部配置。
+- 最多 4 名玩家；目前每个独立服务器进程维护一间房，客户端从主菜单创建或浏览房间。
+- 游戏进入进行阶段后不接收新玩家，同一局死亡的玩家不复活。
+- 服务器生成钥匙、门和敌人，确认交互、生命状态和回合结果；客户端负责本机输入与表现。
+- 第一人称本机角色与网络玩家对象分开，由桥接组件传递位置、动画和状态。
+- 当前体力代码的重新启动冲刺阈值为 80%；消耗与恢复时长可在 Inspector 覆盖。被追击时允许持续冲刺，追击结束后体力回满。
+- 游戏连接默认使用 UDP 7777，房间目录使用 UDP 7778；部署时两处端口均需可访问。启动脚本可通过参数指定地址和端口，脚本需要配合完整的对应平台构建使用。
 
-## 开发环境
+## 开发环境与验证
 
-原项目使用 Unity **6000.5.6f1**、Input System **1.20.0**、UGUI **2.5.0**；完整游戏还使用 Netcode for GameObjects **2.13.3**、AI Navigation **2.0.14** 和 URP **17.5.0**。这些版本是项目使用记录；本仓库不安装依赖或提供一键运行场景。
+原工程使用 Unity **6000.5.6f1**、Netcode for GameObjects **2.13.3**、AI Navigation **2.0.14**、Input System **1.20.0**、URP **17.5.0** 和 UGUI **2.5.0**。详细依赖见 [Packages/manifest.json](Packages/manifest.json)。
 
-## 实现与协作说明
+完整工程开发过程中进行过多客户端联机和云服务器连接验证。本次同步包含统一排版和简短注释，已对 51 个 C# 脚本进行语法及代码内容对比，并检查编辑器、客户端和服务器条件编译分支；本次发布没有重新进行完整游戏运行验收。
 
-以上模块是我在项目中重点动手实现、反复修改和验证的学习实践内容。开发时使用 AI 辅助梳理任务、解释 API、检查错误，以及补充部分边界处理和注释。仓库保留最终版本，因此不能把每一行都视为我独立编写的原始代码，也没有将 AI 辅助开发部分标为独立完成。
+## 开发与 AI 协作说明
 
-完整项目中的服务器连接与部署、部分网络同步、UI 制作及后期修复有较多 AI 辅助，这些内容没有作为本仓库的主要展示范围。
+作者重点学习、编写和调试了角色输入、移动与体力、交互、动画驱动、大厅表现及细菌状态机等模块，并参与场景配置、多端测试和问题复现。开发过程中使用 AI 辅助拆分任务、讲解 API、审查代码、补充边界处理及注释。
+
+服务器连接与部署、部分网络同步、UI 制作以及后期处决、观战等整合与修复包含较多 AI 实现。本仓库保存的是最终协作版本，统一代码风格不代表每行代码均由作者独立编写。
+
+另保留 [2026-10-28 细菌状态机历史示例](Historical/2026-10-28-BacteriaStateMachine/README.md)，展示作者参与开发时的巡逻与追击版本。该历史目录原样保留，与当前运行时代码分开阅读。

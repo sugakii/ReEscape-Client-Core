@@ -6,6 +6,7 @@ using UnityEngine;
 public interface IInteractable
 {
     Transform InteractionPoint { get; }
+
     InteractionPromptUI PromptUI { get; }
 
     // 执行物体自身的交互行为。

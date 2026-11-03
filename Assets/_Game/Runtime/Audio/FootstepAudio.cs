@@ -36,14 +36,19 @@ public class FootstepAudio : MonoBehaviour
         if(index < 0 || index >= clips.Length || clips.Length == 1)
         {
             randomIndex = Random.Range(0, clips.Length);
-        } else
+        }
+        else
         {
             randomIndex = Random.Range(0, clips.Length - 1);
             randomIndex = randomIndex >= index ? randomIndex + 1 : randomIndex;
         }
 
         clip = clips[randomIndex];
-        if(clip == null) return;
+        if(clip == null)
+        {
+            return;
+        }
+
         audioSource.PlayOneShot(clip, volumeScale);
         index = randomIndex;
     }
@@ -51,7 +56,11 @@ public class FootstepAudio : MonoBehaviour
     // 死亡、结算和退出时清掉仍在播放的短音效。
     public void StopSteps()
     {
-        if(audioSource != null) audioSource.Stop();
+        if(audioSource != null)
+        {
+            audioSource.Stop();
+        }
+
         index = -1;
     }
 
